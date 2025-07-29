@@ -49,6 +49,19 @@ class Database:
             )
         """)
         
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS user_environment_variables (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                value TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id),
+                UNIQUE(user_id, name)
+            )
+        """)
+        
         # Create default admin user if it doesn't exist
         cursor.execute("SELECT COUNT(*) FROM users WHERE username = 'admin'")
         if cursor.fetchone()[0] == 0:
@@ -239,5 +252,89 @@ class Database:
             conn.commit()
             conn.close()
             return True
+        except sqlite3.Error:
+            return False
+    
+    # Environment Variables methods
+    def get_user_env_vars(self, user_id: int) -> list:
+        """Get all environment variables for a user"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT name, value, created_at, updated_at 
+            FROM user_environment_variables 
+            WHERE user_id = ?
+            ORDER BY name
+        """, (user_id,))
+        
+        env_vars = []
+        for row in cursor.fetchall():
+            env_vars.append({
+                "name": row[0],
+                "value": row[1],
+                "created_at": row[2],
+                "updated_at": row[3]
+            })
+        
+        conn.close()
+        return env_vars
+    
+    def get_user_env_var(self, user_id: int, name: str) -> dict:
+        """Get a specific environment variable for a user"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT name, value, created_at, updated_at 
+            FROM user_environment_variables 
+            WHERE user_id = ? AND name = ?
+        """, (user_id, name))
+        
+        row = cursor.fetchone()
+        conn.close()
+        
+        if row:
+            return {
+                "name": row[0],
+                "value": row[1],
+                "created_at": row[2],
+                "updated_at": row[3]
+            }
+        return None
+    
+    def set_user_env_var(self, user_id: int, name: str, value: str) -> bool:
+        """Set/update an environment variable for a user"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                INSERT OR REPLACE INTO user_environment_variables 
+                (user_id, name, value, updated_at)
+                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            """, (user_id, name, value))
+            
+            conn.commit()
+            conn.close()
+            return True
+        except sqlite3.Error:
+            return False
+    
+    def delete_user_env_var(self, user_id: int, name: str) -> bool:
+        """Delete an environment variable for a user"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                DELETE FROM user_environment_variables 
+                WHERE user_id = ? AND name = ?
+            """, (user_id, name))
+            
+            rows_affected = cursor.rowcount
+            conn.commit()
+            conn.close()
+            return rows_affected > 0
         except sqlite3.Error:
             return False

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from ...services.auth_service import AuthService
-from ...models.auth import UserCreate, UserResponse, Token, UserLogin
+from ...models.auth import UserCreate, UserResponse, Token, UserLogin, EnvVarCreate
 from ...core.security import require_scopes, check_scope_access
 
 router = APIRouter()
@@ -171,3 +171,47 @@ async def list_all_users_with_scopes(current_user: dict = Depends(get_current_us
 async def protected_route(current_user: dict = Depends(get_current_user)):
     """Example protected route (no specific scope required)"""
     return auth_service.get_protected_message(current_user)
+
+
+# Environment Variables endpoints
+@router.get("/environment-variables")
+async def get_user_env_vars(current_user: dict = Depends(get_current_user)):
+    """Get all environment variables for the current user"""
+    return auth_service.get_user_env_vars(current_user)
+
+
+@router.get("/environment-variables/{name}")
+async def get_user_env_var(name: str, current_user: dict = Depends(get_current_user)):
+    """Get a specific environment variable for the current user"""
+    return auth_service.get_user_env_var(name, current_user)
+
+
+@router.post("/environment-variables")
+async def create_or_update_env_var(
+    env_var: EnvVarCreate, 
+    current_user: dict = Depends(get_current_user)
+):
+    """Create or update an environment variable for the current user"""
+    return auth_service.set_user_env_var(env_var.name, env_var.value, current_user)
+
+
+@router.put("/environment-variables/{name}")
+async def update_env_var(
+    name: str,
+    env_var: EnvVarCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update an environment variable for the current user"""
+    # Ensure the name in the URL matches the name in the body
+    if name != env_var.name:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Environment variable name in URL must match name in request body"
+        )
+    return auth_service.set_user_env_var(env_var.name, env_var.value, current_user)
+
+
+@router.delete("/environment-variables/{name}")
+async def delete_env_var(name: str, current_user: dict = Depends(get_current_user)):
+    """Delete an environment variable for the current user"""
+    return auth_service.delete_user_env_var(name, current_user)
