@@ -1,0 +1,91 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run Python Project",
+			"type": "shell",
+			"command": "uv run main.py",
+			"group": "build",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "check-server-running",
+			"type": "shell",
+			"command": "curl",
+			"args": [
+				"-f",
+				"http://localhost:8000/"
+			],
+			"group": "test",
+			"presentation": {
+				"echo": true,
+				"reveal": "silent",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": true,
+				"clear": false
+			},
+			"options": {
+				"cwd": "${workspaceFolder}/ecs-api"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Start ECS API Server",
+			"type": "shell",
+			"command": "${workspaceFolder}/ecs-api/.venv/bin/python",
+			"args": [
+				"main.py"
+			],
+			"group": "build",
+			"isBackground": true,
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "new",
+				"showReuseMessage": true,
+				"clear": false
+			},
+			"options": {
+				"cwd": "${workspaceFolder}/ecs-api"
+			},
+			"problemMatcher": [
+				{
+					"pattern": [
+						{
+							"regexp": ".",
+							"file": 1,
+							"location": 2,
+							"message": 3
+						}
+					],
+					"background": {
+						"activeOnStart": true,
+						"beginsPattern": ".*",
+						"endsPattern": "Application startup complete.*"
+					}
+				}
+			]
+		},
+		{
+			"label": "Run All Tests",
+			"type": "shell",
+			"command": "./run_tests.sh",
+			"group": "test",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": true,
+				"panel": "new",
+				"showReuseMessage": true,
+				"clear": false
+			},
+			"options": {
+				"cwd": "${workspaceFolder}/ecs-api"
+			},
+			"problemMatcher": []
+		}
+	]
+}

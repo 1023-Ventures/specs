@@ -1,0 +1,78 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Run ECS API Server",
+			"type": "debugpy",
+			"request": "launch",
+			"program": "${workspaceFolder}/specs-api/main.py",
+			"console": "integratedTerminal",
+			"cwd": "${workspaceFolder}/specs-api",
+			"python": "${workspaceFolder}/specs-api/.venv/bin/python",
+			"env": {},
+			"args": []
+		},
+		{
+			"name": "Debug ECS API Server",
+			"type": "debugpy",
+			"request": "launch",
+			"program": "${workspaceFolder}/specs-api/main.py",
+			"console": "integratedTerminal",
+			"cwd": "${workspaceFolder}/specs-api",
+			"python": "${workspaceFolder}/specs-api/.venv/bin/python",
+			"env": {},
+			"args": [],
+			"stopOnEntry": false,
+			"justMyCode": true
+		},
+		{
+			"name": "Run ECS Auth API Tests",
+			"type": "debugpy",
+			"request": "launch",
+			"program": "${workspaceFolder}/specs-api/tests/test_auth.py",
+			"console": "integratedTerminal",
+			"cwd": "${workspaceFolder}/specs-api",
+			"python": "${workspaceFolder}/specs-api/.venv/bin/python",
+			"env": {
+				"PYTHONPATH": "${workspaceFolder}/specs-api"
+			},
+			"args": [],
+			"stopOnEntry": false,
+			"justMyCode": true
+		},
+		{
+			"name": "Debug ECS Auth API Tests",
+			"type": "debugpy",
+			"request": "launch",
+			"program": "${workspaceFolder}/specs-api/tests/test_auth.py",
+			"console": "integratedTerminal",
+			"cwd": "${workspaceFolder}/specs-api",
+			"python": "${workspaceFolder}/specs-api/.venv/bin/python",
+			"env": {
+				"PYTHONPATH": "${workspaceFolder}/specs-api"
+			},
+			"args": [],
+			"stopOnEntry": false,
+			"justMyCode": false
+		},
+		{
+			"name": "Run Pytest Scope Management Tests",
+			"type": "debugpy",
+			"request": "launch",
+			"module": "pytest",
+			"console": "integratedTerminal",
+			"cwd": "${workspaceFolder}/specs-api",
+			"python": "${workspaceFolder}/specs-api/.venv/bin/python",
+			"env": {
+				"PYTHONPATH": "${workspaceFolder}/specs-api"
+			},
+			"args": [
+				"tests/test_scope_management.py",
+				"-v",
+				"--tb=short"
+			],
+			"stopOnEntry": false,
+			"justMyCode": true
+		}
+	]
+}
