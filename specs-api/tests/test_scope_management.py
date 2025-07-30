@@ -79,8 +79,17 @@ class TestScopeManagement:
         assert response.status_code == 200
         
         data = response.json()
-        assert "users" in data
-        assert isinstance(data["users"], list)
+        # The API returns a list directly, not wrapped in a "users" key
+        assert isinstance(data, list)
+        assert len(data) > 0  # Should have at least the admin user
+        
+        # Check that each user has the expected structure
+        for user in data:
+            assert "id" in user
+            assert "username" in user
+            assert "email" in user
+            assert "available_scopes" in user
+            assert isinstance(user["available_scopes"], list)
         
         # Test with regular user token (should fail)
         if self.user_token:
@@ -96,7 +105,7 @@ class TestScopeManagement:
         users_response = client.get("/api/v1/users/scopes", headers=self.admin_headers)
         assert users_response.status_code == 200
         
-        users = users_response.json()["users"]
+        users = users_response.json()  # API returns list directly
         if not users:
             pytest.skip("No users found")
         
@@ -125,7 +134,7 @@ class TestScopeManagement:
         users_response = client.get("/api/v1/users/scopes", headers=self.admin_headers)
         assert users_response.status_code == 200
         
-        users = users_response.json()["users"]
+        users = users_response.json()  # API returns list directly
         test_user = None
         for user in users:
             if user["username"] == self.test_user_data["username"]:
@@ -136,7 +145,7 @@ class TestScopeManagement:
             pytest.skip("Test user not found")
         
         user_id = test_user["id"]
-        
+
         # Test granting a scope with admin token
         response = client.post(f"/api/v1/users/{user_id}/scopes/write_profile", headers=self.admin_headers)
         assert response.status_code == 200
@@ -165,7 +174,7 @@ class TestScopeManagement:
         users_response = client.get("/api/v1/users/scopes", headers=self.admin_headers)
         assert users_response.status_code == 200
         
-        users = users_response.json()["users"]
+        users = users_response.json()  # API returns list directly
         test_user = None
         for user in users:
             if user["username"] == self.test_user_data["username"]:
@@ -244,7 +253,7 @@ class TestScopeManagement:
             # Find user ID
             users_response = client.get("/api/v1/users/scopes", headers=self.admin_headers)
             if users_response.status_code == 200:
-                users = users_response.json()["users"]
+                users = users_response.json()
                 test_user = None
                 for user in users:
                     if user["username"] == self.test_user_data["username"]:
@@ -305,7 +314,7 @@ class TestScopeIntegration:
         users_response = client.get("/api/v1/users/scopes", headers=admin_headers)
         assert users_response.status_code == 200
         
-        users = users_response.json()["users"]
+        users = users_response.json()
         test_user = None
         for user in users:
             if user["username"] == "lifecycle_user":

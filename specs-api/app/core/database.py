@@ -18,7 +18,9 @@ class Database:
         self.init_database()
     
     def get_connection(self):
-        return sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(self.db_path, timeout=10.0)
+        conn.row_factory = sqlite3.Row
+        return conn
     
     def init_database(self):
         """Initialize the database with users and user_scopes tables"""
@@ -99,20 +101,10 @@ class Database:
                 VALUES (?, ?, ?)
             """, (username, email, hashed_password))
             
-            user_id = cursor.lastrowid
-            
-            # Grant default scopes to new users
-            default_scopes = ['read_profile', 'write_profile']
-            for scope in default_scopes:
-                cursor.execute("""
-                    INSERT INTO user_scopes (user_id, scope, granted_by)
-                    VALUES (?, ?, 'system')
-                """, (user_id, scope))
-            
             conn.commit()
             conn.close()
             return True
-        except sqlite3.IntegrityError:
+        except sqlite3.Error as e:
             return False
     
     def get_user(self, username: str) -> Optional[dict]:
@@ -229,14 +221,14 @@ class Database:
             cursor = conn.cursor()
             
             cursor.execute("""
-                INSERT OR IGNORE INTO user_scopes (user_id, scope, granted_by)
+                INSERT OR REPLACE INTO user_scopes (user_id, scope, granted_by)
                 VALUES (?, ?, ?)
             """, (user_id, scope, granted_by))
             
             conn.commit()
             conn.close()
             return True
-        except sqlite3.Error:
+        except sqlite3.Error as e:
             return False
     
     def revoke_scope_from_user(self, user_id: int, scope: str) -> bool:
@@ -252,7 +244,7 @@ class Database:
             conn.commit()
             conn.close()
             return True
-        except sqlite3.Error:
+        except sqlite3.Error as e:
             return False
     
     # Environment Variables methods

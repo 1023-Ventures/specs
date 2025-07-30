@@ -15,11 +15,16 @@ class AuthService:
         if self.db.create_user(user_data.username, user_data.email, user_data.password):
             created_user = self.db.get_user(user_data.username)
             if created_user:
+                # Get user scopes (will be empty for new user)
+                user_scopes = self.get_user_scopes_by_id(created_user["id"])
+                
                 return UserResponse(
                     id=created_user["id"],
                     username=created_user["username"],
                     email=created_user["email"],
                     is_active=created_user["is_active"],
+                    role=created_user.get("role", "user"),
+                    available_scopes=user_scopes,
                     created_at=created_user["created_at"]
                 )
         raise HTTPException(
@@ -72,11 +77,16 @@ class AuthService:
     
     def get_user_profile(self, current_user: dict) -> UserResponse:
         """Get current user profile"""
+        # Get user scopes
+        user_scopes = self.get_user_scopes_by_id(current_user["id"])
+        
         return UserResponse(
             id=current_user["id"],
             username=current_user["username"],
             email=current_user["email"],
             is_active=current_user["is_active"],
+            role=current_user.get("role", "user"),
+            available_scopes=user_scopes,
             created_at=current_user["created_at"]
         )
     
@@ -104,6 +114,19 @@ class AuthService:
             "available_scopes": current_user.get("available_scopes", []),
             "current_token_scopes": current_user.get("scopes", [])
         }
+    
+    def get_user_scopes_by_id(self, user_id: int) -> list:
+        """Get user scopes by user ID"""
+        conn = self.db.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT scope FROM user_scopes WHERE user_id = ?
+        """, (user_id,))
+        
+        scopes = [row[0] for row in cursor.fetchall()]
+        conn.close()
+        return scopes
     
     def get_user_by_id(self, user_id: int) -> Optional[dict]:
         """Get user by ID"""
