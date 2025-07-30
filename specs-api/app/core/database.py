@@ -247,6 +247,62 @@ class Database:
         except sqlite3.Error as e:
             return False
     
+    def list_all_users_with_scopes(self) -> list:
+        """List all users with their scopes (SQLite version using GROUP_CONCAT)"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT u.id, u.username, u.email, u.role, u.is_active,
+                   GROUP_CONCAT(us.scope) as scopes
+            FROM users u
+            LEFT JOIN user_scopes us ON u.id = us.user_id
+            GROUP BY u.id, u.username, u.email, u.role, u.is_active
+            ORDER BY u.id
+        """)
+        
+        users = cursor.fetchall()
+        conn.close()
+        
+        # Convert to the expected format
+        result = []
+        for user in users:
+            user_dict = {
+                'id': user[0],
+                'username': user[1],
+                'email': user[2],
+                'role': user[3],
+                'is_active': bool(user[4]),
+                'available_scopes': user[5].split(',') if user[5] else []
+            }
+            result.append(user_dict)
+        
+        return result
+    
+    def get_user_by_id(self, user_id: int) -> Optional[dict]:
+        """Get user by ID"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT id, username, email, is_active, role, created_at
+            FROM users WHERE id = ?
+        """, (user_id,))
+        
+        user = cursor.fetchone()
+        conn.close()
+        
+        if user:
+            return {
+                'id': user[0],
+                'username': user[1],
+                'email': user[2],
+                'is_active': bool(user[3]),
+                'role': user[4],
+                'created_at': user[5]
+            }
+        return None
+    
     # Environment Variables methods
     def get_user_env_vars(self, user_id: int) -> list:
         """Get all environment variables for a user"""

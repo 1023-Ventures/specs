@@ -1,11 +1,10 @@
 from fastapi import HTTPException, status
-from typing import Optional
-from ..core.database import Database
-
+from typing import List, Optional
+from ..core.database_factory import get_database
 
 class EnvironmentService:
     def __init__(self):
-        self.db = Database()
+        self.db = get_database()
     
     def get_user_env_vars(self, current_user: dict) -> dict:
         """Get all environment variables for the current user"""

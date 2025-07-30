@@ -2,13 +2,13 @@ from fastapi import HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials
 from datetime import timedelta
 from typing import Optional
-from ..core.database import Database
+from ..core.database_factory import get_database
 from ..models.auth import UserCreate, UserResponse, Token, UserLogin, UserScopesResponse
 
 
 class AuthService:
     def __init__(self):
-        self.db = Database()
+        self.db = get_database()
     
     def register_user(self, user_data: UserCreate) -> UserResponse:
         """Register a new user"""
@@ -117,42 +117,12 @@ class AuthService:
     
     def get_user_scopes_by_id(self, user_id: int) -> list:
         """Get user scopes by user ID"""
-        conn = self.db.get_connection()
-        cursor = conn.cursor()
-        
-        cursor.execute("""
-            SELECT scope FROM user_scopes WHERE user_id = ?
-        """, (user_id,))
-        
-        scopes = [row[0] for row in cursor.fetchall()]
-        conn.close()
-        return scopes
+        # Use the database's built-in method which handles different SQL dialects
+        return self.db.get_user_available_scopes(user_id)
     
     def get_user_by_id(self, user_id: int) -> Optional[dict]:
         """Get user by ID"""
-        conn = self.db.get_connection()
-        cursor = conn.cursor()
-        
-        cursor.execute("""
-            SELECT id, username, email, is_active, role, created_at
-            FROM users WHERE id = ?
-        """, (user_id,))
-        
-        row = cursor.fetchone()
-        conn.close()
-        
-        if row:
-            user = {
-                "id": row[0],
-                "username": row[1],
-                "email": row[2],
-                "is_active": bool(row[3]),
-                "role": row[4],
-                "created_at": row[5]
-            }
-            user["available_scopes"] = self.db.get_user_available_scopes(user_id)
-            return user
-        return None
+        return self.db.get_user_by_id(user_id)
     
     def grant_scope_to_user(self, user_id: int, scope: str, granted_by: str) -> bool:
         """Grant a scope to a user (admin only)"""
@@ -167,28 +137,4 @@ class AuthService:
     
     def list_all_users_with_scopes(self) -> list:
         """List all users with their scopes (admin only)"""
-        conn = self.db.get_connection()
-        cursor = conn.cursor()
-        
-        cursor.execute("""
-            SELECT u.id, u.username, u.email, u.role, u.is_active,
-                   GROUP_CONCAT(us.scope) as scopes
-            FROM users u
-            LEFT JOIN user_scopes us ON u.id = us.user_id
-            GROUP BY u.id, u.username, u.email, u.role, u.is_active
-        """)
-        
-        users = []
-        for row in cursor.fetchall():
-            scopes = row[5].split(',') if row[5] else []
-            users.append({
-                "id": row[0],
-                "username": row[1],
-                "email": row[2],
-                "role": row[3],
-                "is_active": bool(row[4]),
-                "available_scopes": scopes
-            })
-        
-        conn.close()
-        return users
+        return self.db.list_all_users_with_scopes()

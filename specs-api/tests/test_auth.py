@@ -2,10 +2,77 @@
 """
 Test script for the ECS Auth API
 """
+import pytest
 import requests
 import json
 
 BASE_URL = "http://localhost:8000/api/v1"
+
+@pytest.fixture(scope="session")
+def token():
+    """Get regular user token for testing"""
+    # First register the user
+    register_data = {
+        "username": "testuser",
+        "email": "test@example.com",
+        "password": "testpass123"
+    }
+    try:
+        requests.post(f"{BASE_URL}/register", json=register_data)
+    except:
+        pass  # User might already exist
+    
+    # Login to get token
+    login_data = {
+        "username": "testuser",
+        "password": "testpass123",
+        "scopes": ["read_profile"]
+    }
+    
+    try:
+        response = requests.post(f"{BASE_URL}/login", json=login_data)
+        if response.status_code == 200:
+            token_data = response.json()
+            return token_data["access_token"]
+        else:
+            pytest.fail(f"Failed to get user token: {response.status_code} - {response.text}")
+    except Exception as e:
+        pytest.fail(f"Login failed: {e}")
+
+@pytest.fixture(scope="session")
+def admin_token():
+    """Get admin token for testing"""
+    login_data = {
+        "username": "admin",
+        "password": "admin123",
+        "scopes": ["admin", "read_users", "write_users"]
+    }
+    
+    try:
+        response = requests.post(f"{BASE_URL}/login", json=login_data)
+        if response.status_code == 200:
+            token_data = response.json()
+            return token_data["access_token"]
+        else:
+            pytest.fail(f"Failed to get admin token: {response.status_code} - {response.text}")
+    except Exception as e:
+        pytest.fail(f"Login failed: {e}")
+
+@pytest.fixture(scope="session")  
+def user_token(token):
+    """Alias for token fixture"""
+    return token
+
+@pytest.fixture(scope="session")
+def user_id():
+    """Get a test user ID"""
+    # This will be the test user created in the token fixture
+    return 2  # Assuming admin is ID 1, test user is ID 2
+
+@pytest.fixture(scope="session")
+def scope():
+    """Test scope to use"""
+    return "read_profile"
 
 def test_server():
     """Test if the server is running"""
@@ -74,7 +141,12 @@ def test_login_with_scopes():
         response = requests.post(f"{BASE_URL}/login", json=login_data)
         if response.status_code == 200:
             token_data = response.json()
-            print(f"✅ Login with scopes successful: {token_data}")
+            print(f"✅ Login ({login_data['username']}) with scopes successful: {token_data}")
+            print(f"Requested scopes: {login_data['scopes']}")
+            print(f"Granted scopes: {token_data['scopes']}")
+
+            if len(token_data['scopes']) != len(login_data['scopes']):
+                print("⚠️ Warning: Not all requested scopes were granted")
             return token_data["access_token"]
         else:
             print(f"❌ Login with scopes failed: {response.status_code} - {response.text}")

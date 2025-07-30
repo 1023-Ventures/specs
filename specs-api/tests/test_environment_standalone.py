@@ -2,10 +2,30 @@
 """
 Test script for the Environment Variables API
 """
+import pytest
 import requests
 import json
 
 BASE_URL = "http://localhost:8000/api/v1"
+
+@pytest.fixture(scope="session")
+def token():
+    """Get admin token for testing"""
+    login_data = {
+        "username": "admin",
+        "password": "admin123",
+        "scopes": ["admin"]
+    }
+    
+    try:
+        response = requests.post(f"{BASE_URL}/login", json=login_data)
+        if response.status_code == 200:
+            token_data = response.json()
+            return token_data["access_token"]
+        else:
+            pytest.fail(f"Failed to get admin token: {response.status_code} - {response.text}")
+    except Exception as e:
+        pytest.fail(f"Login failed: {e}")
 
 def get_admin_token():
     """Get admin token for testing"""
